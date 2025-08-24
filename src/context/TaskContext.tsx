@@ -1,50 +1,141 @@
-import React, { createContext, useContext, ReactNode } from 'react';
+import { createContext, useContext, ReactNode, useState, useEffect } from 'react';
 import { Task, ViewType } from '../types';
-import { useLocalStorage } from '../hooks/useLocalStorage';
+import { useAuth } from './AuthContext';
 
 interface TaskContextType {
   tasks: Task[];
   setTasks: (tasks: Task[] | ((tasks: Task[]) => Task[])) => void;
   currentView: ViewType;
   setCurrentView: (view: ViewType) => void;
-  addTask: (task: Omit<Task, 'id' | 'created_at'>) => void;
-  updateTask: (id: string, updates: Partial<Task>) => void;
-  deleteTask: (id: string) => void;
-  completeTask: (id: string) => void;
+  addTask: (task: Omit<Task, 'id' | 'created_at'>) => Promise<void>;
+  updateTask: (id: string, updates: Partial<Task>) => Promise<void>;
+  deleteTask: (id: string) => Promise<void>;
+  completeTask: (id: string) => Promise<void>;
   getTodaysTasks: () => Task[];
   getBacklogTasks: () => Task[];
   getCompletedTasks: () => Task[];
+  loading: boolean;
+  error: string | null;
+  refreshTasks: () => Promise<void>;
 }
 
 const TaskContext = createContext<TaskContextType | undefined>(undefined);
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+
 export function TaskProvider({ children }: { children: ReactNode }) {
-  const [tasks, setTasks] = useLocalStorage<Task[]>('microtasker-tasks', []);
-  const [currentView, setCurrentView] = useLocalStorage<ViewType>('microtasker-view', 'today');
+  const { token, isAuthenticated } = useAuth();
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [currentView, setCurrentView] = useState<ViewType>('today');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const addTask = (taskData: Omit<Task, 'id' | 'created_at'>) => {
-    const newTask: Task = {
-      ...taskData,
-      id: crypto.randomUUID(),
-      created_at: new Date().toISOString()
-    };
-    setTasks(prev => [...prev, newTask]);
+  // API helper function
+  const apiCall = async (endpoint: string, options: RequestInit = {}) => {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token && { Authorization: `Bearer ${token}` }),
+        ...options.headers,
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ message: 'Network error' }));
+      throw new Error(errorData.message || `HTTP ${response.status}`);
+    }
+
+    return response.json();
   };
 
-  const updateTask = (id: string, updates: Partial<Task>) => {
-    setTasks(prev => 
-      prev.map(task => 
-        task.id === id ? { ...task, ...updates } : task
-      )
-    );
+  // Fetch tasks from API
+  const refreshTasks = async () => {
+    if (!isAuthenticated || !token) return;
+    
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const data = await apiCall('/tasks');
+      setTasks(data.tasks || []);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch tasks';
+      setError(errorMessage);
+      console.error('Failed to fetch tasks:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const deleteTask = (id: string) => {
-    setTasks(prev => prev.filter(task => task.id !== id));
+  // Load tasks when authenticated
+  useEffect(() => {
+    if (isAuthenticated && token) {
+      refreshTasks();
+    } else {
+      setTasks([]);
+    }
+  }, [isAuthenticated, token]);
+
+  const addTask = async (taskData: Omit<Task, 'id' | 'created_at'>) => {
+    if (!isAuthenticated || !token) throw new Error('Not authenticated');
+    
+    setError(null);
+    try {
+      const data = await apiCall('/tasks', {
+        method: 'POST',
+        body: JSON.stringify(taskData),
+      });
+      
+      setTasks(prev => [...prev, data.task]);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to create task';
+      setError(errorMessage);
+      throw err;
+    }
   };
 
-  const completeTask = (id: string) => {
-    updateTask(id, { 
+  const updateTask = async (id: string, updates: Partial<Task>) => {
+    if (!isAuthenticated || !token) throw new Error('Not authenticated');
+    
+    setError(null);
+    try {
+      const data = await apiCall(`/tasks/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(updates),
+      });
+      
+      setTasks(prev => 
+        prev.map(task => 
+          task.id === id ? data.task : task
+        )
+      );
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to update task';
+      setError(errorMessage);
+      throw err;
+    }
+  };
+
+  const deleteTask = async (id: string) => {
+    if (!isAuthenticated || !token) throw new Error('Not authenticated');
+    
+    setError(null);
+    try {
+      await apiCall(`/tasks/${id}`, {
+        method: 'DELETE',
+      });
+      
+      setTasks(prev => prev.filter(task => task.id !== id));
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to delete task';
+      setError(errorMessage);
+      throw err;
+    }
+  };
+
+  const completeTask = async (id: string) => {
+    await updateTask(id, { 
       completed: true, 
       completed_at: new Date().toISOString() 
     });
@@ -82,7 +173,10 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       completeTask,
       getTodaysTasks,
       getBacklogTasks,
-      getCompletedTasks
+      getCompletedTasks,
+      loading,
+      error,
+      refreshTasks
     }}>
       {children}
     </TaskContext.Provider>
