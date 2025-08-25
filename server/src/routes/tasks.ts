@@ -60,7 +60,7 @@ router.post('/', [
   body('title').trim().isLength({ min: 1, max: 200 }),
   body('category').optional().isIn(['Read', 'Write', 'Speak', 'Learn', 'Pray', 'Break', 'Build']),
   body('priority').optional().isIn(['High', 'Medium', 'Low']),
-  body('time_estimate').isIn(['2-5 min', '5-10 min', '10+ min']),
+  body('time_estimate').optional().isIn(['2-5 min', '5-10 min', '10+ min']),
   body('repeat').optional().isIn(['daily', 'weekly', 'custom', 'none']),
   body('tags').optional().isArray(),
   body('due_date').optional().isISO8601()
@@ -83,7 +83,7 @@ router.post('/', [
       title,
       category: category || null,
       priority: priority || null,
-      time_estimate,
+      time_estimate: time_estimate || '2-5 min',
       repeat: repeat || 'none',
       tags: tags || [],
       due_date: due_date ? new Date(due_date) : null,
