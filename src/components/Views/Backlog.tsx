@@ -127,7 +127,7 @@ export function Backlog() {
           </p>
         </div>
       ) : (
-        <div className="grid gap-4">
+        <div className="grid gap-1">
           {filteredTasks.map(task => (
             <TaskCard 
               key={task.id} 

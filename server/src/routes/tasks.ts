@@ -58,16 +58,18 @@ router.get('/', authenticateToken, async (req: Request, res: Response) => {
 router.post('/', [
   authenticateToken,
   body('title').trim().isLength({ min: 1, max: 200 }),
-  body('category').optional().isIn(['Read', 'Write', 'Speak', 'Learn', 'Pray', 'Break', 'Build']),
-  body('priority').optional().isIn(['High', 'Medium', 'Low']),
+  body('category').optional({ values: 'null' }).isIn(['Read', 'Write', 'Speak', 'Learn', 'Pray', 'Break', 'Build']),
+  body('priority').optional({ values: 'null' }).isIn(['High', 'Medium', 'Low']),
   body('time_estimate').optional().isIn(['2-5 min', '5-10 min', '10+ min']),
   body('repeat').optional().isIn(['daily', 'weekly', 'custom', 'none']),
   body('tags').optional().isArray(),
   body('due_date').optional().isISO8601()
 ], async (req: Request, res: Response) => {
   try {
+    console.log('Task creation request body:', req.body);
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      console.log('Validation errors:', errors.array());
       res.status(400).json({
         message: 'Validation failed',
         errors: errors.array()

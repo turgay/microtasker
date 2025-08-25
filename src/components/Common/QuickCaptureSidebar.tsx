@@ -194,8 +194,8 @@ export function QuickCaptureSidebar() {
       {isExpanded && (
         <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
           <div className="text-xs text-gray-600 dark:text-gray-400 space-y-1">
-            <div><code className="bg-gray-100 dark:bg-gray-600 px-1 rounded">/read</code> <code className="bg-gray-100 dark:bg-gray-600 px-1 rounded">/write</code> for categories</div>
-            <div><code className="bg-gray-100 dark:bg-gray-600 px-1 rounded">#urgent</code> <code className="bg-gray-100 dark:bg-gray-600 px-1 rounded">#today</code> for tags</div>
+            <div><code className="bg-gray-100 dark:bg-gray-600 px-1 rounded">/read</code> <code className="bg-gray-100 dark:bg-gray-600 px-1 rounded">/write /speak /learn /pray /break /build</code> for categories</div>
+            <div><code className="bg-gray-100 dark:bg-gray-600 px-1 rounded">#urgent</code> <code className="bg-gray-100 dark:bg-gray-600 px-1 rounded">#today</code> <code className="bg-gray-100 dark:bg-gray-600 px-1 rounded">#tomorrow</code> for tags</div>
             <div><kbd className="px-1 bg-gray-100 dark:bg-gray-600 rounded text-xs">⌘+Enter</kbd> to submit</div>
           </div>
         </div>
