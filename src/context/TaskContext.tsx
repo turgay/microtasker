@@ -159,7 +159,11 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   };
 
   const getBacklogTasks = () => {
-    return tasks.filter(task => task && !task.completed);
+    return tasks.filter(task => 
+      task && 
+      !task.completed && 
+      !task.template_id // Exclude recurring task instances (only show templates)
+    );
   };
 
   const getCompletedTasks = () => {

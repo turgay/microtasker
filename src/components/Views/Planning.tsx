@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Calendar, Clock } from 'lucide-react';
 import { useTaskContext } from '../../context/TaskContext';
 import { TaskCard } from '../Common/TaskCard';
@@ -91,7 +91,7 @@ export function Planning() {
             <Calendar className="w-5 h-5 text-purple-600" />
             Tasks for {new Date(selectedDate).toLocaleDateString()} ({selectedDateTasks.length})
           </h3>
-          <div className="grid gap-1">
+          <div className="space-y-2">
             {selectedDateTasks.map(task => (
               <TaskCard key={task.id} task={task} showActions={true} showDate={false} />
             ))}
@@ -106,21 +106,19 @@ export function Planning() {
             <Clock className="w-5 h-5 text-gray-600" />
             Unplanned Tasks ({unplannedTasks.length})
           </h3>
-          <div className="grid gap-1">
+          <div className="space-y-2">
             {unplannedTasks.map(task => (
-              <div key={task.id} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-2 border border-gray-200 dark:border-gray-600">
-                <div className="flex items-center gap-2">
-                  <div className="flex-1">
-                    <TaskCard task={task} showActions={false} />
-                  </div>
-                  <button
-                    onClick={() => handleScheduleTask(task.id)}
-                    className="px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded transition-colors flex items-center gap-1.5"
-                  >
-                    <Clock className="w-3 h-3" />
-                    Schedule
-                  </button>
+              <div key={task.id} className="flex items-center gap-2">
+                <div className="flex-1">
+                  <TaskCard task={task} showActions={false} />
                 </div>
+                <button
+                  onClick={() => handleScheduleTask(task.id)}
+                  className="px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded transition-colors flex items-center gap-1.5"
+                >
+                  <Clock className="w-3 h-3" />
+                  Schedule
+                </button>
               </div>
             ))}
           </div>
