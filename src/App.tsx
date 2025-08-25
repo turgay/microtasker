@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { TaskProvider, useTaskContext } from './context/TaskContext';
 import { Navigation } from './components/Layout/Navigation';
@@ -14,6 +14,25 @@ type AppView = 'landing' | 'login' | 'register' | 'dashboard';
 
 function Dashboard() {
   const { currentView } = useTaskContext();
+  const [isQuickCaptureOpen, setIsQuickCaptureOpen] = useState(false);
+
+  // Global keyboard shortcut handler
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        if (currentView !== 'backlog') {
+          setIsQuickCaptureOpen(prev => !prev);
+        }
+      }
+      if (e.key === 'Escape' && currentView !== 'backlog') {
+        setIsQuickCaptureOpen(false);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [currentView]);
 
   const renderCurrentView = () => {
     switch (currentView) {
@@ -30,12 +49,17 @@ function Dashboard() {
     }
   };
 
+  const shouldShowQuickCapture = currentView === 'backlog' || isQuickCaptureOpen;
+
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Navigation />
       <main className="flex-1 p-6 overflow-auto">
         <div className="max-w-6xl mx-auto space-y-6">
-          <QuickCaptureSidebar />
+          <QuickCaptureSidebar 
+            isOpen={shouldShowQuickCapture}
+            onClose={() => setIsQuickCaptureOpen(false)}
+          />
           {renderCurrentView()}
         </div>
       </main>

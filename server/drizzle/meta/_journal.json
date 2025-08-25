@@ -8,6 +8,20 @@
       "when": 1756058429594,
       "tag": "0000_daffy_lenny_balinger",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1756121376811,
+      "tag": "0001_natural_madame_masque",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1756122757780,
+      "tag": "0002_damp_salo",
+      "breakpoints": true
     }
   ]
 }

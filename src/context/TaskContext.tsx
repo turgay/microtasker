@@ -87,7 +87,17 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify(taskData),
       });
       
-      setTasks(prev => [...prev, data.task]);
+      // Handle different response formats
+      if (data.template && data.instance) {
+        // Recurring task: add both template and instance
+        setTasks(prev => [...prev, data.template, data.instance]);
+      } else if (Array.isArray(data)) {
+        // Regular task returned as array
+        setTasks(prev => [...prev, data[0]]);
+      } else {
+        // Regular task returned as object
+        setTasks(prev => [...prev, data]);
+      }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to create task';
       setError(errorMessage);
@@ -144,18 +154,18 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   const getTodaysTasks = () => {
     const today = new Date().toDateString();
     return tasks.filter(task => 
-      task.due_date && new Date(task.due_date).toDateString() === today
+      task && task.due_date && new Date(task.due_date).toDateString() === today
     );
   };
 
   const getBacklogTasks = () => {
-    return tasks.filter(task => !task.completed && !task.due_date);
+    return tasks.filter(task => task && !task.completed);
   };
 
   const getCompletedTasks = () => {
     const today = new Date().toDateString();
     return tasks.filter(task => 
-      task.completed && 
+      task && task.completed && 
       task.completed_at && 
       new Date(task.completed_at).toDateString() === today
     );

@@ -2,7 +2,7 @@ import { pgTable, text, timestamp, boolean, uuid, pgEnum, json } from 'drizzle-o
 
 // Enums
 export const priorityEnum = pgEnum('priority', ['High', 'Medium', 'Low']);
-export const repeatTypeEnum = pgEnum('repeat_type', ['daily', 'weekly', 'custom', 'none']);
+export const repeatTypeEnum = pgEnum('repeat_type', ['daily', 'weekly', 'monthly', 'none']);
 export const timeEstimateEnum = pgEnum('time_estimate', ['2-5 min', '5-10 min', '10+ min']);
 export const categoryEnum = pgEnum('category', ['Read', 'Write', 'Speak', 'Learn', 'Pray', 'Break', 'Build']);
 
@@ -32,6 +32,13 @@ export const tasks = pgTable('tasks', {
   completed_at: timestamp('completed_at'),
   created_at: timestamp('created_at').defaultNow().notNull(),
   updated_at: timestamp('updated_at').defaultNow().notNull(),
+  // Recurring task fields
+  is_recurring: boolean('is_recurring').default(false).notNull(),
+  is_template: boolean('is_template').default(false).notNull(),
+  template_id: uuid('template_id'),
+  start_date: timestamp('start_date'),
+  end_date: timestamp('end_date'),
+  frequency: repeatTypeEnum('frequency').default('daily'),
 });
 
 // Type exports for TypeScript

@@ -1,38 +1,40 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { Plus, Zap } from 'lucide-react';
 import { useTaskContext } from '../../context/TaskContext';
-import { categories } from '../../data/categories';
-import { CategoryName, Priority, TimeEstimate } from '../../types';
+import { Priority, CategoryName, TimeEstimate, RepeatType } from '../../types';
 
-export function QuickCaptureSidebar() {
+interface QuickCaptureSidebarProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+export function QuickCaptureSidebar({ isOpen, onClose }: QuickCaptureSidebarProps) {
   const { addTask } = useTaskContext();
   const [input, setInput] = useState('');
   const [isExpanded, setIsExpanded] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
 
-  const parseInput = (text: string) => {
-    let title = text;
+  const parseInput = (input: string) => {
+    let title = input;
     let category: CategoryName | null = null;
-    let tags: string[] = [];
     let priority: Priority = null;
     let timeEstimate: TimeEstimate = '2-5 min';
-    let dueDate: string | undefined = undefined;
+    let dueDate = '';
+    const tags: string[] = [];
+    let isRecurring = false;
+    let startDate = '';
+    let endDate = '';
+    let frequency: RepeatType = 'daily';
 
-    // Extract categories (/read, /write, etc.)
-    const categoryMatch = text.match(/\/(\w+)/g);
-    if (categoryMatch) {
-      const categoryText = categoryMatch[0].substring(1).toLowerCase();
-      const foundCategory = categories.find(cat => 
-        cat.name.toLowerCase() === categoryText
-      );
-      if (foundCategory) {
-        category = foundCategory.name;
-        title = title.replace(categoryMatch[0], '').trim();
-      }
+    // Extract categories
+    const categoryMatches = title.match(/\/(read|write|speak|learn|pray|break|build)/gi);
+    if (categoryMatches) {
+      const categoryMatch = categoryMatches[0].substring(1).toLowerCase();
+      category = (categoryMatch.charAt(0).toUpperCase() + categoryMatch.slice(1)) as CategoryName;
+      title = title.replace(categoryMatches[0], '').trim();
     }
 
-    // Extract tags (#urgent, #work, etc.)
-    const tagMatches = text.match(/#(\w+)/g);
+    // Extract tags and special keywords
+    const tagMatches = title.match(/#\w+/g);
     if (tagMatches) {
       tagMatches.forEach(tagMatch => {
         const tag = tagMatch.substring(1).toLowerCase();
@@ -46,11 +48,11 @@ export function QuickCaptureSidebar() {
           priority = 'Low';
         }
         // Special tags for time
-        else if (tag === 'quick' || tag === '2min' || tag === '5min') {
+        else if (tag === 'quick' || tag === '2min' || tag === '5min' || tag === 'fast' || tag === 'short') {
           timeEstimate = '2-5 min';
-        } else if (tag === '10min') {
+        } else if (tag === '10min' || tag === 'medium' || tag === 'mid') {
           timeEstimate = '5-10 min';
-        } else if (tag === 'long' || tag === '15min' || tag === '30min') {
+        } else if (tag === 'long' || tag === '15min' || tag === '30min' || tag === 'slow' || tag === 'extended') {
           timeEstimate = '10+ min';
         }
         // Special tags for dates
@@ -60,6 +62,12 @@ export function QuickCaptureSidebar() {
           const tomorrow = new Date();
           tomorrow.setDate(tomorrow.getDate() + 1);
           dueDate = tomorrow.toISOString().split('T')[0];
+        }
+        // Recurring tags
+        else if (tag === 'daily' || tag === 'weekly' || tag === 'monthly') {
+          isRecurring = true;
+          frequency = tag as RepeatType;
+          startDate = new Date().toISOString().split('T')[0];
         }
         // Regular tags
         else {
@@ -76,9 +84,14 @@ export function QuickCaptureSidebar() {
       tags,
       priority,
       timeEstimate,
-      dueDate
+      dueDate,
+      isRecurring,
+      startDate,
+      endDate,
+      frequency
     };
   };
+
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -95,7 +108,11 @@ export function QuickCaptureSidebar() {
       completed: false,
       repeat: 'none',
       time_estimate: parsed.timeEstimate,
-      due_date: parsed.dueDate
+      due_date: parsed.dueDate,
+      is_recurring: parsed.isRecurring,
+      start_date: parsed.isRecurring ? parsed.startDate : undefined,
+      end_date: parsed.isRecurring && parsed.endDate ? parsed.endDate : undefined,
+      frequency: parsed.isRecurring ? parsed.frequency : undefined,
     });
 
     // Reset form
@@ -110,10 +127,13 @@ export function QuickCaptureSidebar() {
     if (e.key === 'Escape') {
       setIsExpanded(false);
       setInput('');
+      onClose();
     }
   };
 
   const preview = parseInput(input);
+
+  if (!isOpen) return null;
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
@@ -129,13 +149,12 @@ export function QuickCaptureSidebar() {
         <div className="flex gap-3">
           <div className="flex-1">
             <input
-              ref={inputRef}
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
               onFocus={() => setIsExpanded(true)}
-              placeholder="Write email to John /write #urgent #today"
+              placeholder="Write email to John /write #urgent #today #daily"
               className="w-full px-4 py-3 text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent dark:bg-gray-700 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
             />
           </div>
@@ -196,6 +215,8 @@ export function QuickCaptureSidebar() {
           <div className="text-xs text-gray-600 dark:text-gray-400 space-y-1">
             <div><code className="bg-gray-100 dark:bg-gray-600 px-1 rounded">/read</code> <code className="bg-gray-100 dark:bg-gray-600 px-1 rounded">/write /speak /learn /pray /break /build</code> for categories</div>
             <div><code className="bg-gray-100 dark:bg-gray-600 px-1 rounded">#urgent</code> <code className="bg-gray-100 dark:bg-gray-600 px-1 rounded">#today</code> <code className="bg-gray-100 dark:bg-gray-600 px-1 rounded">#tomorrow</code> for tags</div>
+            <div><code className="bg-gray-100 dark:bg-gray-600 px-1 rounded">#quick</code> <code className="bg-gray-100 dark:bg-gray-600 px-1 rounded">#10min</code> <code className="bg-gray-100 dark:bg-gray-600 px-1 rounded">#long</code> for time estimates</div>
+            <div><code className="bg-gray-100 dark:bg-gray-600 px-1 rounded">#daily</code> <code className="bg-gray-100 dark:bg-gray-600 px-1 rounded">#weekly</code> <code className="bg-gray-100 dark:bg-gray-600 px-1 rounded">#monthly</code> for recurring tasks</div>
             <div><kbd className="px-1 bg-gray-100 dark:bg-gray-600 rounded text-xs">⌘+Enter</kbd> to submit</div>
           </div>
         </div>

@@ -1,5 +1,5 @@
 export type Priority = 'High' | 'Medium' | 'Low' | null;
-export type RepeatType = 'daily' | 'weekly' | 'custom' | 'none';
+export type RepeatType = 'daily' | 'weekly' | 'monthly' | 'none';
 export type TimeEstimate = '2-5 min' | '5-10 min' | '10+ min';
 export type CategoryName = 'Read' | 'Write' | 'Speak' | 'Learn' | 'Pray' | 'Break' | 'Build';
 
@@ -15,6 +15,13 @@ export interface Task {
   created_at: string;
   due_date?: string;
   completed_at?: string;
+  // Recurring task fields
+  is_recurring?: boolean;
+  is_template?: boolean;
+  template_id?: string;
+  start_date?: string;
+  end_date?: string;
+  frequency?: RepeatType;
 }
 
 export interface Category {
